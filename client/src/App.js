@@ -9,12 +9,11 @@ class App extends Component {
   constructor(props){
     super(props);
     this.state = {
-      storageValue: 0,
       web3: null,
       accounts: null,
       contract: null,
       buffer: null,
-      ipfsHash: ''
+      ipfsHash: '',
     }
 
     this.captureFile = this.captureFile.bind(this)
@@ -53,13 +52,13 @@ class App extends Component {
     const { accounts, contract } = this.state;
 
     // Stores a given value, 5 by default.
-    await contract.methods.set('5fgfjhfhjgfjh6').send({ from: accounts[0] });
+    // await contract.methods.set('5fgfjhfhjgfjh6').send({ from: accounts[0] });
 
     // Get the value from the contract to prove it worked.
-    const response = await contract.methods.get().call();
+    const ipfsHash = await contract.methods.get().call();
 
     // Update state with the result.
-    this.setState({ storageValue: response });
+    this.setState({ ipfsHash });
   };
 
   captureFile(event){
@@ -76,12 +75,17 @@ class App extends Component {
   onSubmit(event){
     event.preventDefault();
     console.log('submitting....');
-    ipfs.add(this.state.buffer, (error, result) => {
+    const { accounts, contract, buffer } = this.state;
+    ipfs.add(buffer, async (error, result) => {
       if (error) {
         console.log(error)
         return
       }
-      this.setState({ipfsHash: result[0].hash})
+      await contract.methods.set(result[0].hash).send({ from: accounts[0] });
+      const ipfsHash = await contract.methods.get().call();
+      this.setState({ ipfsHash });
+      console.log('saved to blockchain');
+      console.log(this.state.ipfsHash);
     })
   }
 
@@ -99,16 +103,6 @@ class App extends Component {
           <input type='file' onChange={this.captureFile} />
           <input type='submit' />
         </form>
-
-        {/* <h2>Smart Contract Example</h2>
-        <p>
-          If your contracts compiled and migrated successfully, below will show
-          a stored value of 5 (by default).
-        </p>
-        <p>
-          Try changing the value stored on <strong>line 40</strong> of App.js.
-        </p>
-        <div>The stored value is: {this.state.storageValue}</div> */}
       </div>
     );
   }
